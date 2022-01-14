@@ -7,18 +7,12 @@
 
 #include <stdbool.h>
 
-struct message
+struct clientMessage
 {
     long type;
     char message[1024];
-} clientRegistration, clientResponse;
+} clientRegistrationToSendToServer, clientRegistrationToReceiveFromServer;
 
-void registerNewUser();
-void readSettings();
-char readResponseFromUser();
-long readIdFromUser();
-long checkAvailabilityOfId(long tempId);
-void userMenu();
 
 
 

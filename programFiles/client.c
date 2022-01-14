@@ -2,29 +2,50 @@
 // Created by Jakub on 25/12/2021.
 //
 
-#include "../headers/client.h"
-#include "../headers/configuration.h"
+
 #include <stdio.h>
-#include <sys/ipc.h>
-#include <sys/msg.h>
-#include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <stdbool.h>
+#include <sys/msg.h>
+#include <string.h>
+
+#include "../headers/client.h"
 
 
-int main() {
-    readSettings();
 
-    while (1){
-        printf("Welcome in inter-server communicator, choose an action\n"
-               "R - Register to server\n"
-               "Q - Quit the program\n");
+void clearConsole();
+char readResponseFromUser();
+void registerNewUser();
+long readIdFromUser();
+bool sendUserIdToServer();
 
+_Noreturn void userMenu();
+
+long userId;
+int serverKey = 555768;
+int queue;
+bool registered = false;
+
+int clientRegistrationToSendToServerType = 11;
+int clientRegistrationToReceiveFromServerType = 12;
+
+int main(){
+    clearConsole();
+    printf("Welcome in inter-server communicator, choose an action\n"
+           "R - Register to server\n"
+           "Q - Quit the program\n");
+
+    while (1) {
         switch (readResponseFromUser()) {
             case 'R' : registerNewUser(); break;
-            default : printf("Wrong data, please try again\n\n"); break;
-            case 'Q' : return 0;
+            default : printf("Wrong data, please try again\n\n");
+                printf("Choose an action\n"
+                       "R - Register to server\n"
+                       "Q - Quit the program\n");
+                break;
+
+            case 'Q' :
+                return 0;
         }
 
         if(registered){
@@ -33,81 +54,75 @@ int main() {
     }
 }
 
-void readSettings() {
-    serverId = msgget(serverKey, 0644 | IPC_CREAT);
-    clientRegistration.type = registrationType;
-    clientResponse.type = responseType;
-    registered = false;
-}
 
 void registerNewUser() {
     printf("Please put unique number, it will be your user id\n");
 
     //take id from user and convert it to long and check availability of id in server
-    userId = checkAvailabilityOfId(readIdFromUser());
+    userId = readIdFromUser();
 
-    if(userId){
-        printf("You have registered successful\n");
-        printf("Your unique id => %ld\n", userId);
-        registered = true;
-        return;
+    if(sendUserIdToServer()){
+        printf("Registration successful, your private id : %ld", userId);
     } else {
-        printf("Your id is unavailable, please try again\n\n");
-        registered = false;
-        return;
+        userId = 0;
+        printf("Registration failed");
     }
+
 }
 
 
+
+void clearConsole() {
+    system("clear");
+}
+
 char readResponseFromUser() {
     char response;
-    scanf("%c", &response);
+    scanf(" %c", &response);
     fflush(stdin);
     response = (char)toupper((int)response);
     return response;
 }
 
-
-
-long readIdFromUser(){
+long readIdFromUser() {  // uwaga na 0
     char temp[30];
-    scanf("%s", temp);
+    scanf(" %s", temp);
     fflush(stdin);
     return strtol(temp, NULL, 0);
 }
 
+bool sendUserIdToServer() {
+    clientRegistrationToSendToServer.type = clientRegistrationToSendToServerType;
+    char tempId[100];
+    sprintf(tempId, "%ld", userId);
+    strcpy(clientRegistrationToSendToServer.message, tempId);
+    queue = msgget(serverKey, 0644 | IPC_CREAT);
+    msgsnd(queue, &clientRegistrationToSendToServer, sizeof(clientRegistrationToSendToServer.message) , 0);
 
-long checkAvailabilityOfId(long tempId) {
-    char tempIdString[50];
-    sprintf(tempIdString, "%ld", tempId);
-    strcpy(clientRegistration.message, tempIdString);
-    msgsnd(serverId, &clientRegistration, strlen(clientRegistration.message)+1, IPC_NOWAIT);
-    msgrcv(serverId, &clientResponse, 1024, responseType, 0);
-    if(strcmp(clientResponse.message, "Available") == 0){
-        registered = true;
-        return tempId;
+    msgrcv(queue, &clientRegistrationToReceiveFromServer, sizeof(clientRegistrationToReceiveFromServer.message), clientRegistrationToReceiveFromServerType, 0);
+
+    if(strcmp(clientRegistrationToReceiveFromServer.message, "Available") == 0){
+        return true;
+    } else if (strcmp(clientRegistrationToReceiveFromServer.message, "Unavailable") == 0){
+        return false;
     } else {
-       registered = false;
-        return 0;
+        printf("There is no empty places, sorry\n");
+        return false;
+    }
+
+}
+
+_Noreturn void userMenu() {
+    while (1) {
+        printf("jestes w menu");
     }
 }
 
-void userMenu() {
-    bool logged = true;
 
-    while (logged){
-        printf("Choose an action\n"
-               "Q - Quit the program\n");
 
-        switch (readResponseFromUser()) {
-            case 'Q' : logged = false; break;
-            default : printf("Wrong data, please try again\n\n"); break;
 
-        }
-    }
 
-    registered = false;
-    userId = 0;
-}
+
+
 
 

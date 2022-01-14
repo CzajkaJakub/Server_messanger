@@ -5,15 +5,12 @@
 #ifndef INTER_SERVER_MESSENGER_SERVER_H
 #define INTER_SERVER_MESSENGER_SERVER_H
 
-struct message
+struct serverMessage
 {
     long type;
     char message[1024];
-} registrationServer, responseServer;
+} serverRegistrationToReceive, serverRegistrationToSendToClient;
 
-void readServerSettings();
-_Noreturn void registerNewUsers();
-int checkAvailabilityOfId();
-void saveUserIdInServerMemory();
+
 
 #endif //INTER_SERVER_MESSENGER_SERVER_H

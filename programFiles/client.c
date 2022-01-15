@@ -9,13 +9,14 @@
 #include <sys/msg.h>
 #include <string.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include "../headers/client.h"
 
 
 
 long userId;
-int serverKey = 555768;   // takie samo jak u servera (publiczny klucz kolejki)
+int serverKey = 3334444;   // takie samo jak u servera (publiczny klucz kolejki)
 int queue;                      // publiczna kolejka
 bool registered = false;         // stan rejestracji
 
@@ -28,6 +29,8 @@ long privateTypeToReceiveMessagesFromServer;
 
 
 void deregisterFromTheServer();
+
+_Noreturn void startReceivingMessagesFromServer();
 
 int main(){
 
@@ -61,7 +64,7 @@ void registerNewUser() {
     setIdAsMessage();
     sendRequestToServer();
 
-    if(checkAvailabilityOfId()){
+    if(checkAvailabilityOfIdAndSave()){
         registeredStatus();
     } else {
         unregisteredStatus();
@@ -71,21 +74,36 @@ void registerNewUser() {
 }
 
 _Noreturn void userMenu() {
-    while (registered) {
-        printf("Welcome in user menu, choose an action\n"
-               "S - Show all accounts registered in server\n"
-               "Q - Deregister from server\n");
+    if(fork() == 0){
+        startReceivingMessagesFromServer();
+    } else {
 
-        switch (readResponseFromUser()) {
-            case 'S' :
-                showAllAccounts(); // todo
-                break;
-            default :
-                printf("Wrong data, please try again\n\n");
-                break;
-            case 'Q' :
-                deregisterFromTheServer();  // todo
+        kill(-getpid(), -1);
+
+        while (registered) {
+            printf("Welcome in user menu, choose an action\n"
+                   "S - Show all accounts registered in server\n"
+                   "Q - Deregister from server\n");
+
+            switch (readResponseFromUser()) {
+                case 'S' :
+                    showAllAccounts();
+                    break;
+                default :
+                    printf("Wrong data, please try again\n\n");
+                    break;
+                case 'Q' :
+                    deregisterFromTheServer();  // todo
+            }
         }
+    }
+}
+
+_Noreturn void startReceivingMessagesFromServer() {
+    while (1) {
+        printf("dzicko");
+        fflush(stdout);
+        sleep(1);
     }
 }
 
@@ -107,7 +125,7 @@ long readIdFromUser() {  // uwaga na 0       // zwraca id usera typu long
 
 // sprawdza czy id jest mozliwe po stronie servera
 
-bool checkAvailabilityOfId() {
+bool checkAvailabilityOfIdAndSave() {
     msgrcv(queue, &requestFromServerToReceive, sizeof(requestFromServerToReceive.message), clientRegistrationToReceiveFromServerType, 0);
 
     if(strcmp(requestFromServerToReceive.message, "Available") == 0){
@@ -120,7 +138,6 @@ bool checkAvailabilityOfId() {
     }
 
 }
-
 
 // ustawia status na niezarejestrowany
 void unregisteredStatus() {
@@ -156,7 +173,7 @@ void setIdAsMessage() {
 //wysylanie requesta na server
 void sendRequestToServer() {
     queue = msgget(serverKey, 0644 | IPC_CREAT);
-    msgsnd(queue, &requestToSendToServer, sizeof(requestToSendToServer.message) , 0);
+    msgsnd(queue, &requestToSendToServer, sizeof(requestToSendToServer.message) , IPC_NOWAIT);
 
     // do wyjebania
     printf("%s - wiadomosc, %ld - typ wiadomosci\n", requestToSendToServer.message, requestToSendToServer.type);

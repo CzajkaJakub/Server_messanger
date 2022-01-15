@@ -18,7 +18,7 @@ void clearConsole();
 char readResponseFromUser();
 void registerNewUser();
 long readIdFromUser();
-bool checkAvailabilityOfId();
+bool checkAvailabilityOfIdAndSave();
 _Noreturn void userMenu();
 void changeRequestType(int type);
 void setIdAsMessage();

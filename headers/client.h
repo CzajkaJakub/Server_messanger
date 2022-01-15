@@ -7,13 +7,25 @@
 
 #include <stdbool.h>
 
-struct clientMessage
+struct message
 {
     long type;
     char message[1024];
-} clientRegistrationToSendToServer, clientRegistrationToReceiveFromServer;
+} requestToSendToServer, requestFromServerToReceive;
 
 
+void clearConsole();
+char readResponseFromUser();
+void registerNewUser();
+long readIdFromUser();
+bool checkAvailabilityOfId();
+_Noreturn void userMenu();
+void changeRequestType(int type);
+void setIdAsMessage();
+void sendRequestToServer();
+void showAllAccounts();
+void registeredStatus();
+void unregisteredStatus();
 
 
 

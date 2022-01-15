@@ -9,7 +9,7 @@ struct serverMessage
 {
     long type;
     char message[1024];
-} serverRegistrationToReceive, serverRegistrationToSendToClient;
+} serverRequestToReceive, serverMessageToSendToClient;
 
 
 

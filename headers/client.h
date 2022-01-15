@@ -19,13 +19,15 @@ char readResponseFromUser();
 void registerNewUser();
 long readIdFromUser();
 bool checkAvailabilityOfIdAndSave();
-_Noreturn void userMenu();
-void changeRequestType(int type);
+void userMenu();
+void changeRequestType(long type);
 void setIdAsMessage();
 void sendRequestToServer();
 void showAllAccounts();
 void registeredStatus();
 void unregisteredStatus();
+void deregisterFromTheServer();
+_Noreturn void startReceivingMessagesFromServer();
 
 
 

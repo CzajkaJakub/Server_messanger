@@ -9,7 +9,7 @@
 #include <sys/msg.h>
 #include <string.h>
 #include <unistd.h>
-#include <signal.h>
+
 
 #include "../headers/client.h"
 
@@ -25,12 +25,14 @@ bool registered = false;         // stan rejestracji
 int clientRegistrationToSendToServerType = 11;
 int clientRegistrationToReceiveFromServerType = 12;
 int showAllAccountsType = 13;
+int deregisterFromServerType = 14;
+int registerToRoomType = 15;
+
+
 long privateTypeToReceiveMessagesFromServer;
 
 
-void deregisterFromTheServer();
-
-_Noreturn void startReceivingMessagesFromServer();
+void registerToRoom();
 
 int main(){
 
@@ -73,16 +75,14 @@ void registerNewUser() {
     }
 }
 
-_Noreturn void userMenu() {
+void userMenu() {
     if(fork() == 0){
         startReceivingMessagesFromServer();
     } else {
-
-        kill(-getpid(), -1);
-
         while (registered) {
             printf("Welcome in user menu, choose an action\n"
                    "S - Show all accounts registered in server\n"
+                   "R - Register to a room\n"
                    "Q - Deregister from server\n");
 
             switch (readResponseFromUser()) {
@@ -93,7 +93,10 @@ _Noreturn void userMenu() {
                     printf("Wrong data, please try again\n\n");
                     break;
                 case 'Q' :
-                    deregisterFromTheServer();  // todo
+                    deregisterFromTheServer();
+                case 'R':
+                    registerToRoom();
+                    break;
             }
         }
     }
@@ -101,9 +104,9 @@ _Noreturn void userMenu() {
 
 _Noreturn void startReceivingMessagesFromServer() {
     while (1) {
-        printf("dzicko");
+        msgrcv(queue, &requestFromServerToReceive, sizeof(requestFromServerToReceive.message), privateTypeToReceiveMessagesFromServer, 0);
+        printf("You have received a message from server : %s\n", requestFromServerToReceive.message);
         fflush(stdout);
-        sleep(1);
     }
 }
 
@@ -159,7 +162,7 @@ void clearConsole() {
 }
 
 //zmienia typ requesta
-void changeRequestType(int type) {
+void changeRequestType(long type) {
     requestToSendToServer.type = type;
 }
 
@@ -186,9 +189,25 @@ void showAllAccounts() {
     sendRequestToServer();
 }
 
-// wyrejestruj // todo
+// wyrejestruj
 void deregisterFromTheServer() {
+    changeRequestType(deregisterFromServerType);
+    setIdAsMessage();
+    sendRequestToServer();
+    unregisteredStatus();
+}
 
+void registerToRoom() {
+    changeRequestType(registerToRoomType);
+    setIdAsMessage();
+    sendRequestToServer();
+
+    changeRequestType(privateTypeToReceiveMessagesFromServer + 100);
+    char response[1024];
+    scanf(" %s", response);
+    fflush(stdin);
+    strcpy(requestToSendToServer.message, response);
+    sendRequestToServer();
 }
 
 

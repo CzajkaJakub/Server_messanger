@@ -16,25 +16,28 @@ int queue;
 
 int clientRegistrationToSendToServerType = 11;
 int clientRegistrationToSendToClientType = 12;
-
-
-// typy
 int showAllAccountsType = 13;
+int deregisterFromServerType = 14;
+int registerToRoomType = 15;
+
+
+
+//pokoje
+
+int maxRooms = 5;
+long canal[5][5];
+
 
 
 int maxUsers = 5;
 long users[5];
 
 
-_Noreturn void startWorking();
-long checkRequest();
-void registerNewUser();
-void changeTypeOfMessageToSend(long type);
-bool checkAvailabilityOfIdAndSave();
-void sendRequestToClient();
-void changeMessageInRequest(const char *message);
-void showAllAccount();
-long getIdFromMessage();
+void registerUserToRoom();
+void removeUserFromRoom(long userId);
+void receiveUsersDecision(long userId);
+
+void addUserToRoom(long id);
 
 int main(){
     startWorking();
@@ -48,12 +51,15 @@ _Noreturn void startWorking() {
         switch (requestType) {
             case 11 : registerNewUser(); break;
             case 13 : showAllAccount(); break;
+            case 14 : deregisterUserFromTheServer(); break;
+            case 15 : registerUserToRoom(); break;
             default: printf("Other data type"); fflush(stdout); break;
         }
 
         sleep(3);
     }
 }
+
 
 long checkRequest() {
     msgrcv(queue, &serverRequestToReceive, sizeof(serverRequestToReceive.message), 0, 0);
@@ -72,8 +78,6 @@ void registerNewUser() {
         printf("%s - user id is %s - registration failed\n", serverRequestToReceive.message, serverMessageToSendToClient.message);
     }
     sendRequestToClient();
-
-
     fflush(stdout);
 }
 
@@ -116,35 +120,68 @@ void sendRequestToClient() {
 }
 
 void showAllAccount() {
-    printf("wszystkie konta wypisz");
     changeTypeOfMessageToSend(getIdFromMessage());
-    changeMessageInRequest("wszystkie konta");
+
+    char allAccountsMessage[1024] = "";
+    for(int i = 0; i < maxUsers; i++){
+        if(users[i] != 0){
+            char tempId[100];
+            sprintf(tempId, "\nUser's id : %ld", users[i]);
+            strcat(allAccountsMessage, tempId);
+        }
+    }
+
+    changeMessageInRequest(allAccountsMessage);
     sendRequestToClient();
 }
 
+void deregisterUserFromTheServer() {
+    changeTypeOfMessageToSend(getIdFromMessage());
+
+    for(int i = 0; i < maxUsers; i++){
+        if(users[i] == getIdFromMessage()){
+            users[i] = 0;
+        }
+    }
+
+    changeMessageInRequest("You have been disconnected");
+    sendRequestToClient();
+}
+
+void registerUserToRoom() {
+    long tempId = getIdFromMessage();
+    removeUserFromRoom(tempId);
+    changeTypeOfMessageToSend(tempId);
+    changeMessageInRequest("Select the room number : 'Room 1 - 1', 'Room 2 - 2', 'Room 3 - 3', 'Room 4 - 4', 'Room 5 - 5'");
+
+    printf("Wysylam do %ld - %s", serverMessageToSendToClient.type, serverMessageToSendToClient.message);
+    msgsnd(queue, &serverMessageToSendToClient, sizeof(serverMessageToSendToClient.message), 0);
+    sleep(1);
+    receiveUsersDecision(tempId);
+    addUserToRoom(tempId);
+}
 
 
+void removeUserFromRoom(long userId) {
+    for(int i = 0; i < maxRooms; i++){
+        for(int j = 0; j < maxUsers; j++){
+            if(canal[i][j] == userId){
+                canal[i][j] = 0;
+            }
+        }
+    }
+}
 
-//void checkShowAll() {
-//    queue = msgget(serverKey, 0644 | IPC_CREAT);
-//    if (msgrcv(queue, &serverRequestToReceive, sizeof(serverRequestToReceive.message), showAllAccountsType,
-//               IPC_NOWAIT) != -1) {
-//        printf("odebralem requesta o wyswietlenie uzytkownikow do %s\n", serverRequestToReceive.message);
-//
-//        char wiad[1024];
-//
-//        for(int i=0; i < maxUsers; i++){
-//            char tempuser[10];
-//            sprintf(tempuser, "%ld", users[i]);
-//            strcat(wiad, tempuser);
-//        }
-//
-//        printf("Wiadomosc : %s", wiad);
-//
-////        strcpy(serverMessageToSendToClient.message, );
-////        printf("%s - user id is %s - registration failed\n", serverRequestToReceive.message,
-////               serverMessageToSendToClient.message);
-////        msgsnd(queue, &serverMessageToSendToClient, sizeof(serverMessageToSendToClient.message), 0);
-////        return;
-//    }
-//}
+void receiveUsersDecision(long userId) {
+    msgrcv(queue, &serverRequestToReceive, sizeof(serverRequestToReceive.message), userId + 100, 0);
+    fflush(stdout);
+}
+
+void addUserToRoom(long id) {
+    long roomToJoin = strtol(serverRequestToReceive.message, NULL, 0);
+    for(int i = 0; i < maxUsers; i++){
+        if(canal[roomToJoin][i] == 0){
+            canal[roomToJoin][i] = id;
+        }
+    }
+}

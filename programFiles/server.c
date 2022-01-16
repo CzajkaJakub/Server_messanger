@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 
 #include "../headers/server.h"
 
@@ -21,9 +22,11 @@ int deregisterFromServerType = 14;
 int registerToRoomType = 15;
 int showAllRoomsType = 16;
 int showAllUsersInAllRooms = 17;
-
 int sendMessageToUserInRoomType = 18;
-int sendMessageToAllUsersInRoomType = 19; // todo
+int sendMessageToAllUsersInRoomType = 19;
+
+
+
 
 
 
@@ -40,19 +43,14 @@ int maxUsers = 5;
 long users[5];
 
 
-void registerUserToRoom();
-void removeUserFromRoom(long userId);
-void receiveUsersDecision(long userId);
+void sendMessageToAllUsersInRoom();
 
-void addUserToRoom(long id);
-
-void showAllRooms();
-
-void showAllRoomsWithUsers();
-
-void sendMessageToUser();
+char * getTime();
 
 int main(){
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    printf("%d-%02d-%02d %02d:%02d:%02d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
     startWorking();
 }
 
@@ -69,6 +67,7 @@ _Noreturn void startWorking() {
             case 16 : showAllRooms(); break;
             case 17 : showAllRoomsWithUsers(); break;
             case 18 : sendMessageToUser(); break;
+            case 19 : sendMessageToAllUsersInRoom(); break;
             default: printf("Other data type"); fflush(stdout); break;
         }
 
@@ -76,15 +75,56 @@ _Noreturn void startWorking() {
     }
 }
 
-void sendMessageToUser() {
-    long senderId;
+void sendMessageToAllUsersInRoom() {
+    long senderId = getIdFromMessage();
+    msgrcv(queue, &serverRequestToReceive, sizeof(serverRequestToReceive.message), sendMessageToAllUsersInRoomType, 0);
 
-    for(int i = 0; i < maxUsers; i++){
-        if(getIdFromMessage() == users[i]){
-            senderId = users[i];
+    char message[1024];
+    sprintf(message, "%s User %ld send a message %s", getTime(), senderId, serverRequestToReceive.message);
+
+    printf("%s", message);
+    fflush(stdout);
+
+
+    for(int i = 0; i < maxRooms; i++){
+        for(int j = 0; j < maxUsers; j++){
+            if(canal[i][j] == senderId){
+                for(int k = 0; k < maxUsers; k++){
+                    if(canal[i][k] != 0 && canal[i][k] != senderId){
+
+                        printf("%ld sends to do %ld a message : %s\n", senderId, canal[i][k], message);
+                        fflush(stdout);
+                        changeTypeOfMessageToSend(canal[i][k]);
+
+                        printf("%ld", canal[i][k]);
+                        fflush(stdout);
+
+                        changeMessageInRequest(message);
+                        sendRequestToClient();
+                        sleep(1);
+                    }
+                }
+                return;
+            }
         }
     }
 
+    changeTypeOfMessageToSend(senderId);
+    changeMessageInRequest("Message hasn't been delivered - you are not in a room\n");
+    sendRequestToClient();
+}
+
+char * getTime() {
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    char time[50];
+    sprintf(time, "%d-%02d-%02d %02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+    printf("%s", time);
+    return time;
+}
+
+void sendMessageToUser() {
+    long senderId = getIdFromMessage();
     msgrcv(queue, &serverRequestToReceive, sizeof(serverRequestToReceive.message), sendMessageToUserInRoomType, 0);
     long userToSendId = getIdFromMessage();
     msgrcv(queue, &serverRequestToReceive, sizeof(serverRequestToReceive.message), sendMessageToUserInRoomType, 0);
@@ -92,11 +132,25 @@ void sendMessageToUser() {
     char message[1024];
     sprintf(message, "User %ld send a message %s", senderId, serverRequestToReceive.message);
 
-    printf("%ld sends to do %ld a message : %s\n", senderId, userToSendId, message);
-    fflush(stdout);
+    for(int i = 0; i < maxRooms; i++){
+        for(int j = 0; j < maxUsers; j++){
+            if(canal[i][j] == senderId){
+                for(int k = 0; k < maxUsers; k++){
+                    if(canal[i][k] == userToSendId){
+                        printf("%ld sends to do %ld a message : %s\n", senderId, userToSendId, message);
+                        fflush(stdout);
+                        changeTypeOfMessageToSend(userToSendId);
+                        changeMessageInRequest(message);
+                        sendRequestToClient();
+                        return;
+                    }
+                }
+            }
+        }
+    }
 
-    changeTypeOfMessageToSend(userToSendId);
-    changeMessageInRequest(message);
+    changeTypeOfMessageToSend(senderId);
+    changeMessageInRequest("Message hasn't been delivered\n");
     sendRequestToClient();
 }
 

@@ -5,6 +5,8 @@
 #ifndef INTER_SERVER_MESSENGER_SERVER_H
 #define INTER_SERVER_MESSENGER_SERVER_H
 
+
+
 struct serverMessage
 {
     long type;
@@ -21,6 +23,13 @@ void changeMessageInRequest(const char *message);
 void showAllAccount();
 long getIdFromMessage();
 void deregisterUserFromTheServer();
+void registerUserToRoom();
+void removeUserFromRoom(long userId);
+void receiveUsersDecision(long userId);
+void addUserToRoom(long id);
+void showAllRooms();
+void showAllRoomsWithUsers();
+void sendMessageToUser();
 
 
 #endif //INTER_SERVER_MESSENGER_SERVER_H

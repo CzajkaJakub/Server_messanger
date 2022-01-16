@@ -28,6 +28,12 @@ void registeredStatus();
 void unregisteredStatus();
 void deregisterFromTheServer();
 _Noreturn void startReceivingMessagesFromServer();
+void registerToRoom();
+long readCorrectId();
+void showAllRooms();
+void showAllRoomsWithUsers();
+void sendMessageToUser();
+void changeMessageInRequest(const char *message);
 
 
 

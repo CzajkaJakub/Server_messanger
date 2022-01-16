@@ -27,12 +27,28 @@ int clientRegistrationToReceiveFromServerType = 12;
 int showAllAccountsType = 13;
 int deregisterFromServerType = 14;
 int registerToRoomType = 15;
+int showAllRoomsType = 16;
+int showAllUsersInAllRooms = 17;
+
+int sendMessageToUserInRoomType = 18;
+int sendMessageToAllUsersInRoomType = 19; // todo
 
 
 long privateTypeToReceiveMessagesFromServer;
 
 
 void registerToRoom();
+
+long readCorrectId();
+
+void showAllRooms();
+
+void showAllRoomsWithUsers();
+
+void sendMessageToUser();
+
+
+void changeMessageInRequest(const char *message);
 
 int main(){
 
@@ -60,7 +76,7 @@ void registerNewUser() {
     printf("Please put unique number, it will be your user id\n");
 
     //take id from user and convert it to long and check availability of id in server
-    userId = readIdFromUser();
+    userId = readCorrectId();
     clearConsole();
     changeRequestType(clientRegistrationToSendToServerType);
     setIdAsMessage();
@@ -83,6 +99,9 @@ void userMenu() {
             printf("Welcome in user menu, choose an action\n"
                    "S - Show all accounts registered in server\n"
                    "R - Register to a room\n"
+                   "T - Show all rooms\n"
+                   "G - Show all rooms with users\n"
+                   "A - Send a message to some user\n"
                    "Q - Deregister from server\n");
 
             switch (readResponseFromUser()) {
@@ -94,6 +113,15 @@ void userMenu() {
                     break;
                 case 'Q' :
                     deregisterFromTheServer();
+                    break;
+                case 'T' :
+                    showAllRooms(); break;
+                case 'G' :
+                    showAllRoomsWithUsers();
+                    break;
+                case 'A' :
+                    sendMessageToUser();
+                    break;
                 case 'R':
                     registerToRoom();
                     break;
@@ -102,10 +130,50 @@ void userMenu() {
     }
 }
 
+void sendMessageToUser() {
+    char tempUserIdToSendMessage[1024];
+    char message[1024];
+
+    printf("Type a user id to send: ");
+    scanf("%s", tempUserIdToSendMessage);
+
+    printf("\nType a message : ");
+    scanf("%s", message);
+
+    changeRequestType(sendMessageToUserInRoomType);
+
+    setIdAsMessage();
+    sendRequestToServer();
+
+    changeMessageInRequest(tempUserIdToSendMessage);
+    sendRequestToServer();
+
+    changeMessageInRequest(message);
+    sendRequestToServer();
+}
+
+void changeMessageInRequest(const char *message) {
+    strcpy(requestToSendToServer.message, message);
+}
+
+
+void showAllRoomsWithUsers() {
+    changeRequestType(showAllUsersInAllRooms);
+    setIdAsMessage();
+    sendRequestToServer();
+}
+
+void showAllRooms() {
+    changeRequestType(showAllRoomsType);
+    setIdAsMessage();
+    sendRequestToServer();
+}
+
 _Noreturn void startReceivingMessagesFromServer() {
     while (1) {
         msgrcv(queue, &requestFromServerToReceive, sizeof(requestFromServerToReceive.message), privateTypeToReceiveMessagesFromServer, 0);
-        printf("You have received a message from server : %s\n", requestFromServerToReceive.message);
+        sleep(1);
+        printf("\n\nYou have received a message from server : \n%s\n", requestFromServerToReceive.message);
         fflush(stdout);
     }
 }
@@ -124,6 +192,17 @@ long readIdFromUser() {  // uwaga na 0       // zwraca id usera typu long
     scanf(" %s", temp);
     fflush(stdin);
     return strtol(temp, NULL, 0);
+}
+
+long readCorrectId() {
+    long tempUserId = readIdFromUser();
+    printf("%ld", tempUserId);
+    if(tempUserId < 1000 || tempUserId > 9999){
+        printf("Your id must be four numbers ! \n");
+        return readCorrectId();
+    } else {
+        return tempUserId;
+    }
 }
 
 // sprawdza czy id jest mozliwe po stronie servera
@@ -193,6 +272,7 @@ void showAllAccounts() {
 void deregisterFromTheServer() {
     changeRequestType(deregisterFromServerType);
     setIdAsMessage();
+    printf("%s - %ld\n", requestToSendToServer.message, requestToSendToServer.type);
     sendRequestToServer();
     unregisteredStatus();
 }

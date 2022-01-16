@@ -19,6 +19,13 @@ int clientRegistrationToSendToClientType = 12;
 int showAllAccountsType = 13;
 int deregisterFromServerType = 14;
 int registerToRoomType = 15;
+int showAllRoomsType = 16;
+int showAllUsersInAllRooms = 17;
+
+int sendMessageToUserInRoomType = 18;
+int sendMessageToAllUsersInRoomType = 19; // todo
+
+
 
 
 
@@ -39,6 +46,12 @@ void receiveUsersDecision(long userId);
 
 void addUserToRoom(long id);
 
+void showAllRooms();
+
+void showAllRoomsWithUsers();
+
+void sendMessageToUser();
+
 int main(){
     startWorking();
 }
@@ -53,11 +66,69 @@ _Noreturn void startWorking() {
             case 13 : showAllAccount(); break;
             case 14 : deregisterUserFromTheServer(); break;
             case 15 : registerUserToRoom(); break;
+            case 16 : showAllRooms(); break;
+            case 17 : showAllRoomsWithUsers(); break;
+            case 18 : sendMessageToUser(); break;
             default: printf("Other data type"); fflush(stdout); break;
         }
 
         sleep(3);
     }
+}
+
+void sendMessageToUser() {
+    long senderId;
+
+    for(int i = 0; i < maxUsers; i++){
+        if(getIdFromMessage() == users[i]){
+            senderId = users[i];
+        }
+    }
+
+    msgrcv(queue, &serverRequestToReceive, sizeof(serverRequestToReceive.message), sendMessageToUserInRoomType, 0);
+    long userToSendId = getIdFromMessage();
+    msgrcv(queue, &serverRequestToReceive, sizeof(serverRequestToReceive.message), sendMessageToUserInRoomType, 0);
+
+    char message[1024];
+    sprintf(message, "User %ld send a message %s", senderId, serverRequestToReceive.message);
+
+    printf("%ld sends to do %ld a message : %s\n", senderId, userToSendId, message);
+    fflush(stdout);
+
+    changeTypeOfMessageToSend(userToSendId);
+    changeMessageInRequest(message);
+    sendRequestToClient();
+}
+
+void showAllRoomsWithUsers() {
+    changeTypeOfMessageToSend(getIdFromMessage());
+    char message[1024];
+
+    for(int i = 0; i < maxRooms; i++){
+
+        char room[256] = "\nRoom ";
+        char tempI[2];
+        sprintf(tempI, "%d", i + 1);
+        strcat(room, tempI);
+        strcat(room, " Users :");
+
+        for(int j = 0; j < maxUsers; j++){
+            char tempUserId[10];
+            sprintf(tempUserId, " %ld ", canal[i][j]);
+            strcat(room, tempUserId);
+        }
+        strcat(message, room);
+    }
+
+    changeMessageInRequest(message);
+    sendRequestToClient();
+
+}
+
+void showAllRooms() {
+    changeTypeOfMessageToSend(getIdFromMessage());
+    changeMessageInRequest("\n'Room 1'\n'Room 2'\n'Room 3'\n'Room 4'\n'Room 5'\n");
+    sendRequestToClient();
 }
 
 
@@ -143,6 +214,7 @@ void deregisterUserFromTheServer() {
             users[i] = 0;
         }
     }
+    removeUserFromRoom(getIdFromMessage());
 
     changeMessageInRequest("You have been disconnected");
     sendRequestToClient();
@@ -178,10 +250,14 @@ void receiveUsersDecision(long userId) {
 }
 
 void addUserToRoom(long id) {
-    long roomToJoin = strtol(serverRequestToReceive.message, NULL, 0);
-    for(int i = 0; i < maxUsers; i++){
-        if(canal[roomToJoin][i] == 0){
+    long roomToJoin = strtol(serverRequestToReceive.message, NULL, 0) - 1;
+
+    for(int i = 0; i < maxUsers; i++) {
+        if (canal[roomToJoin][i] == 0) {
             canal[roomToJoin][i] = id;
+            break;
         }
     }
 }
+
+

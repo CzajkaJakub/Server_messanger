@@ -5,7 +5,11 @@
 #ifndef INTER_SERVER_MESSENGER_SERVER_H
 #define INTER_SERVER_MESSENGER_SERVER_H
 
-
+int queue;
+int maxRooms = 5;
+long canal[5][5];
+int maxUsers = 5;
+long users[5];
 
 struct serverMessage
 {
@@ -16,10 +20,8 @@ struct serverMessage
 _Noreturn void startWorking();
 long checkRequest();
 void registerNewUser();
-void changeTypeOfMessageToSend(long type);
 bool checkAvailabilityOfIdAndSave();
-void sendRequestToClient();
-void changeMessageInRequest(const char *message);
+void sendRequestToClient(long type, const char *message);
 void showAllAccount();
 long getIdFromMessage();
 void deregisterUserFromTheServer();
@@ -30,6 +32,8 @@ void addUserToRoom(long id);
 void showAllRooms();
 void showAllRoomsWithUsers();
 void sendMessageToUser();
+void sendMessageToAllUsersInRoom();
+
 
 
 #endif //INTER_SERVER_MESSENGER_SERVER_H

@@ -7,12 +7,16 @@
 
 #include <stdbool.h>
 
+long userId;
+int queue;
+bool registered = false;
+long privateTypeToReceiveMessagesFromServer;
+
 struct message
 {
     long type;
     char message[1024];
 } requestToSendToServer, requestFromServerToReceive;
-
 
 void clearConsole();
 char readResponseFromUser();
@@ -22,7 +26,7 @@ bool checkAvailabilityOfIdAndSave();
 void userMenu();
 void changeRequestType(long type);
 void setIdAsMessage();
-void sendRequestToServer();
+void sendRequestToServer(long type);
 void showAllAccounts();
 void registeredStatus();
 void unregisteredStatus();
@@ -34,6 +38,9 @@ void showAllRooms();
 void showAllRoomsWithUsers();
 void sendMessageToUser();
 void changeMessageInRequest(const char *message);
+void sendMessageToAllUsersInRoom();
+void sendRegistrationForm();
+
 
 
 

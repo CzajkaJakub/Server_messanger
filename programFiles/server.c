@@ -14,6 +14,8 @@
 #include "../headers/configuration.h"
 
 
+void sendHistory(long room, long i);
+
 int main(){
     printf("Logs: \n");
     startWorking();
@@ -144,12 +146,13 @@ void sendMessageToAllUsersInRoom() {
     long senderId = getIdFromMessage();
     sprintf(time, "%d-%02d-%02d %02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
     msgrcv(queue, &serverRequestToReceive, sizeof(serverRequestToReceive.message), sendMessageToAllUsersInRoomType, 0);
-    sprintf(message, "%s : User %ld send a message %s", time, senderId, serverRequestToReceive.message);
+    sprintf(message, "%s : User %ld send a public message ->  %s", time, senderId, serverRequestToReceive.message);
 
 
     for(int i = 0; i < maxRooms; i++){
         for(int j = 0; j < maxUsers; j++){
             if(canal[i][j] == senderId){
+                saveMessage(i, message);
                 for(int k = 0; k < maxUsers; k++){
                     if(canal[i][k] != 0 && canal[i][k] != senderId){
                         sendRequestToClient(canal[i][k], message);
@@ -162,11 +165,38 @@ void sendMessageToAllUsersInRoom() {
     }
     sendRequestToClient(senderId, "Message hasn't been delivered - you are not in any room\n");
 }
+void saveMessage(int i, char* message) {
+    switch (i) {
+        case 0 :
+            strcpy(history1[counters[0]], message);
+            counters[0]++;
+            break;
+        case 1 :
+            strcpy(history2[counters[1]], message);
+            counters[1]++;
+            break;
+        case 2 :
+            strcpy(history3[counters[2]], message);
+            counters[2]++;
+            break;
+        case 3 :
+            strcpy(history4[counters[3]], message);
+            counters[3]++;
+            break;
+        case 4 :
+            strcpy(history5[counters[4]], message);
+            counters[4]++;
+            break;
+        default:
+            printf("Something went wrong, call the service (or ambulance) :( !!!\n");
+    }
+}
 void addUserToRoom(long id) {
     long roomToJoin = strtol(serverRequestToReceive.message, NULL, 0) - 1;
     for(int i = 0; i < maxUsers; i++) {
         if (canal[roomToJoin][i] == 0) {
             canal[roomToJoin][i] = id;
+            sendHistory(roomToJoin, id);
             break;
         }
     }
@@ -205,6 +235,50 @@ void sendRequestToClient(long type, const char *message) {
     serverMessageToSendToClient.type = type;
     strcpy(serverMessageToSendToClient.message, message);
     msgsnd(queue, &serverMessageToSendToClient, sizeof(serverMessageToSendToClient.message), IPC_NOWAIT);
+}
+void sendHistory(long room, long userId) {
+    int counterPointer = 0;
+    int counterOfMessages = counters[room];
+
+    if(counterOfMessages > 9){
+        counterPointer = counterOfMessages - 10;
+    }
+
+    char messageToSend[1024] = "Messages from this room: \n";
+    switch (room) {
+        case 0:
+            for (int i = counterPointer; i < counterOfMessages; i++) {
+                strcat(messageToSend, history1[i]);
+                strcat(messageToSend, "\n");
+            }
+            break;
+        case 1:
+            for (int i = counterPointer; i < counterOfMessages; i++) {
+                strcat(messageToSend, history2[i]);
+                strcat(messageToSend, "\n");
+            }
+            break;
+        case 2:
+            for (int i = counterPointer; i < counterOfMessages; i++) {
+                strcat(messageToSend, history3[i]);
+                strcat(messageToSend, "\n");
+            }
+            break;
+        case 3:
+            for (int i = counterPointer; i < counterOfMessages; i++) {
+                strcat(messageToSend, history4[i]);
+                strcat(messageToSend, "\n");
+            }
+            break;
+        case 4:
+            for (int i = counterPointer; i < counterOfMessages; i++) {
+                strcat(messageToSend, history5[i]);
+                strcat(messageToSend, "\n");
+            }
+            break;
+        default: printf("Something went wrong\n"); break;
+    }
+    sendRequestToClient(userId, messageToSend);
 }
 
 

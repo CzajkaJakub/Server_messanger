@@ -1,5 +1,5 @@
 //
-// Created by Patrycja on 03/01/2022.
+// Created by Jakub on 03/01/2022.
 //
 
 #ifndef INTER_SERVER_MESSENGER_CONFIGURATION_H

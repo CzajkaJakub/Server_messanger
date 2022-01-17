@@ -66,7 +66,6 @@ long readIdFromUser() {
     fflush(stdin);
     return strtol(temp, NULL, 0);
 }
-
 void sendRegistrationForm() {
     setIdAsMessage();
     sendRequestToServer(clientRegistrationToSendToServerType);
@@ -216,11 +215,9 @@ void sendRequestToServer(long messageType) {
     changeRequestType(messageType);
     msgsnd(queue, &requestToSendToServer, sizeof(requestToSendToServer.message) , IPC_NOWAIT);
 }
-
 void changeMessageInRequest(const char *mess) {
     strcpy(requestToSendToServer.message, mess);
 }
-
 void changeRequestType(long type) {
     requestToSendToServer.type = type;
 }

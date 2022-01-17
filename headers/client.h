@@ -1,5 +1,5 @@
 //
-// Created by Patrycja on 02/01/2022.
+// Created by Jakub on 02/01/2022.
 //
 
 #ifndef INTER_SERVER_MESSENGER_CLIENT_H
@@ -40,6 +40,7 @@ void sendMessageToUser();
 void changeMessageInRequest(const char *message);
 void sendMessageToAllUsersInRoom();
 void sendRegistrationForm();
+
 
 
 
